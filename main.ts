@@ -4,10 +4,12 @@ import { RangeSetBuilder, EditorState, Transaction } from '@codemirror/state';
 
 interface PlaceholderPluginSettings {
 	reviewPlaceholdersOnStart: boolean;
+	placeholderString: string;
 }
 
 const DEFAULT_SETTINGS: PlaceholderPluginSettings = {
-	reviewPlaceholdersOnStart: false
+	reviewPlaceholdersOnStart: false,
+	placeholderString: "((=))"
 }
 
 
@@ -16,6 +18,7 @@ export default class PlaceholderPlugin extends Plugin {
 	modal: HTMLElement | null = null;
 	count: Number = 0;
 	statusBarItemEl: HTMLElement
+	placeholderRegExp: RegExp
 
 	async onload() {
 		// Load plugin settings
@@ -26,7 +29,7 @@ export default class PlaceholderPlugin extends Plugin {
 		// Register extension for CodeMirror editor
 		this.registerEditorExtension(this.highlightPlaceholderInEditor());
 		// Register the Markdown post-processor
-		this.registerMarkdownPostProcessor(this.highlightPlaceholderInReader);
+		this.registerMarkdownPostProcessor(this.highlightPlaceholderInReader.bind(this));
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		this.statusBarItemEl = this.addStatusBarItem();
@@ -51,7 +54,7 @@ export default class PlaceholderPlugin extends Plugin {
 			name: 'Insert Placeholder',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				console.log(editor.getSelection());
-				editor.replaceSelection('((=))');
+				editor.replaceSelection(this.settings.placeholderString);
 			}
 		});
 
@@ -80,6 +83,8 @@ export default class PlaceholderPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const escapedValue = this.settings.placeholderString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		this.placeholderRegExp = new RegExp(escapedValue, 'g');
 	}
 
 	async saveSettings() {
@@ -88,8 +93,7 @@ export default class PlaceholderPlugin extends Plugin {
 
 	// Count placeholders in a given text
 	countOccurrences(text: string, word: string): number {
-		const regex = new RegExp(/\(\(=\)\)/g)
-		const matches = text.match(regex);
+		const matches = text.match(this.placeholderRegExp);
 		return matches ? matches.length : 0;
 	}
 
@@ -101,7 +105,7 @@ export default class PlaceholderPlugin extends Plugin {
 			if (view && view.getViewType() === 'markdown') {
 				const editor = view.editor;
 				const content = editor.getValue();
-				const count = this.countOccurrences(content, '((=))');
+				const count = this.countOccurrences(content, this.settings.placeholderString);
 				this.statusBarItemEl.setText(`${count} placeholders`);
 			} else {
 				this.statusBarItemEl.setText('');
@@ -111,6 +115,7 @@ export default class PlaceholderPlugin extends Plugin {
 
 	// Handler for highlighting placeholder in editor view
 	highlightPlaceholderInEditor() {
+		const dieses = this;
 		return ViewPlugin.fromClass(class {
 			decorations: DecorationSet;
 
@@ -131,8 +136,7 @@ export default class PlaceholderPlugin extends Plugin {
 				for (let { from, to } of view.visibleRanges) {
 					let text = view.state.doc.sliceString(from, to);
 					let match;
-					const regex = /\(\(=\)\)/g;
-					while ((match = regex.exec(text)) !== null) {
+					while ((match = dieses.placeholderRegExp.exec(text)) !== null) {
 						const start = from + match.index;
 						const end = start + match[0].length;
 						builder.add(start, end, Decoration.mark({
@@ -153,7 +157,7 @@ export default class PlaceholderPlugin extends Plugin {
 		// Iterate through all the paragraphs in the rendered Markdown
 		element.querySelectorAll('p').forEach((paragraph) => {
 			// Replace the target string with a custom element
-			paragraph.innerHTML = paragraph.innerHTML.replace(/\(\(=\)\)/g, (match) => {
+			paragraph.innerHTML = paragraph.innerHTML.replace(this.placeholderRegExp, (match) => {
 				return `<span class="highlight-placeholder">${match}</span>`;
 			});
 		});
@@ -169,7 +173,7 @@ export default class PlaceholderPlugin extends Plugin {
 
 		for (const file of files) {
 			const content = await this.app.vault.read(file);
-			const count = this.countOccurrences(content, '((=))');
+			const count = this.countOccurrences(content, this.settings.placeholderString);
 			totalCount += count;
 			const title = this.extractTitle(content) || file.basename;
 			results.set(file.path, { title, count });
@@ -264,7 +268,7 @@ export default class PlaceholderPlugin extends Plugin {
 	replacePlaceholder(target: HTMLElement, replacementText?: string) {
 		if (replacementText) {
 			const currentText = target.innerText;
-			const newText = currentText.replace(/\(\(=\)\)/g, replacementText);
+			const newText = currentText.replace(this.placeholderRegExp, replacementText);
 			target.innerText = newText;
 			console.log(target);
 			console.log(target.classList);
@@ -380,11 +384,26 @@ class PlaceholderSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Review Placeholders on start-up?')
 			.setDesc('Do you want the plugin to prompt all placeholders for your review when obsidian starts up?')
+			.setHeading()
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.reviewPlaceholdersOnStart)
 				.onChange(async (value) => {
 					this.plugin.settings.reviewPlaceholdersOnStart = value;
 					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('String to use for the Placeholder')
+			.setDesc('Your choice will be escaped and inserted into a global reg expression `/<regex>/g`. Please reload obsidian for the change to take effect')
+			.setHeading()
+			.addText(text => text
+				.setPlaceholder('((=))')
+				.setValue(this.plugin.settings.placeholderString)
+				.onChange(async (value) => {
+					if (value) {
+						this.plugin.settings.placeholderString = value;
+						await this.plugin.saveSettings();
+					}
 				}));
 	}
 }
