@@ -289,6 +289,7 @@ export default class PlaceholderPlugin extends Plugin {
 				font-weight: bold;
 				color: var(--text-error);
 				border: 0.5px solid var(--background-modifier-error);
+				padding-bottom: 2px;
 			}
 			
 			.interactive-replace-modal {
@@ -299,7 +300,6 @@ export default class PlaceholderPlugin extends Plugin {
 				position: fixed;
 				padding: 20px;
 				border-radius: 5px;
-				z-index: 9999;
 			}
 			.interactive-replace-modal input[type="text"] {
 				width: 100%;
