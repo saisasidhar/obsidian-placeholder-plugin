@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext, WorkspaceLeaf } from 'obsidian';
 import { EditorView, Decoration, DecorationSet, ViewPlugin, ViewUpdate, WidgetType } from '@codemirror/view';
 import { RangeSetBuilder, EditorState, Transaction } from '@codemirror/state';
 
@@ -196,10 +196,21 @@ export default class PlaceholderPlugin extends Plugin {
 			this.closeInteractiveFill();
 		}
 	}
+	
+	getViewMode(activeLeaf: WorkspaceLeaf) {
+		const view = activeLeaf.view;
+		if (view instanceof MarkdownView) {
+			return view.getMode()
+		}
+	}
 
 	handleEditorClick(evt: MouseEvent) {
 		const target = evt.target as HTMLElement;
 		if (target.classList.contains('highlight-placeholder')) {
+			if (this.app.workspace.activeLeaf && this.getViewMode(this.app.workspace.activeLeaf) == "preview") {
+				new Notice('You are in Preview Mode (Reading Mode). Change to source to edit the placeholder');
+				return;
+			}
 			this.openIteractiveFill(target);
 		} else {
 			this.closeInteractiveFill();
