@@ -14,11 +14,15 @@ A plugin that let's you insert a custom placeholder string in your markdown note
 2. Configure custom placeholder
 
 
-**Example**
+**Example Screenshots**
 
-![Note with placeholders](docs/example_1.png)
+*A note with placeholders*:
 
-![Review placeholders modal window](docs/example_2.png)
+<img src="docs/example_1.png" alt="Note with placeholders" width="300"/>
+
+*Review placeholders modal*:
+
+<img src="docs/example_2.png" alt="Review placeholders modal window" width="350"/>
 
 **How is this different to a TODO Plugin?**
 
