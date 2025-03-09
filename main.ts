@@ -154,13 +154,43 @@ export default class PlaceholderPlugin extends Plugin {
 
 	// Handler for highlighting placeholder in reader view
 	highlightPlaceholderInReader(element: HTMLElement, context: MarkdownPostProcessorContext) {
-		// Iterate through all the paragraphs in the rendered Markdown
-		element.querySelectorAll('p').forEach((paragraph) => {
-			// Replace the target string with a custom element
-			paragraph.innerHTML = paragraph.innerHTML.replace(this.placeholderRegExp, (match) => {
-				return `<span class="highlight-placeholder">${match}</span>`;
-			});
-		});
+		const processTextNodes = (node: Node) => {
+			if (node.nodeType === Node.TEXT_NODE) {
+				const matches = [...node.nodeValue!.matchAll(this.placeholderRegExp)];
+				console.log(matches);
+				if (matches.length > 0) {
+					const fragment = document.createDocumentFragment();
+					let lastIndex = 0;
+
+					for (const match of matches) {
+						const beforeMatch = node.nodeValue!.slice(lastIndex, match.index);
+						const matchText = match[0];
+
+						if (beforeMatch) {
+							fragment.appendChild(document.createTextNode(beforeMatch));
+						}
+
+						const span = document.createElement("span");
+						span.className = "highlight-placeholder";
+						span.textContent = matchText;
+						fragment.appendChild(span);
+
+						lastIndex = (match.index ?? 0) + matchText.length;
+					}
+
+					const afterMatch = node.nodeValue!.slice(lastIndex);
+					if (afterMatch) {
+						fragment.appendChild(document.createTextNode(afterMatch));
+					}
+
+					node.parentNode?.replaceChild(fragment, node);
+				}
+			} else {
+				node.childNodes.forEach(processTextNodes);
+			}
+		};
+
+		processTextNodes(element);
 	}
 
 	//
