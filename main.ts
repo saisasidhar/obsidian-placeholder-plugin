@@ -34,7 +34,7 @@ export default class PlaceholderPlugin extends Plugin {
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		this.statusBarItemEl = this.addStatusBarItem();
 		// Add a ribbon icon
-		const ribbonIconEl = this.addRibbonIcon('blocks', 'Review Placeholders', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('bandage', 'Review Placeholders', (evt: MouseEvent) => {
 			this.showReviewPlaceholdersModal();
 		});
 		// This adds a settings tab so the user can configure various aspects of the plugin
