@@ -53,7 +53,6 @@ export default class PlaceholderPlugin extends Plugin {
 			id: 'insert-placeholder',
 			name: 'Insert Placeholder',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
 				editor.replaceSelection(this.settings.placeholderString);
 			}
 		});
@@ -67,7 +66,7 @@ export default class PlaceholderPlugin extends Plugin {
 		this.app.workspace.on('editor-change', () => this.updateCountOnStatusBar());
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		this.registerInterval(window.setInterval(() => 5 * 60 * 1000));
 
 		// Show Modal on startup if the setting is enabled
 		if (this.settings.reviewPlaceholdersOnStart) {
@@ -157,7 +156,6 @@ export default class PlaceholderPlugin extends Plugin {
 		const processTextNodes = (node: Node) => {
 			if (node.nodeType === Node.TEXT_NODE) {
 				const matches = [...node.nodeValue!.matchAll(this.placeholderRegExp)];
-				console.log(matches);
 				if (matches.length > 0) {
 					const fragment = document.createDocumentFragment();
 					let lastIndex = 0;
@@ -242,7 +240,7 @@ export default class PlaceholderPlugin extends Plugin {
 		const target = evt.target as HTMLElement;
 		if (target.classList.contains('highlight-placeholder')) {
 			if (this.app.workspace.activeLeaf && this.getViewMode(this.app.workspace.activeLeaf) == "preview") {
-				new Notice('You are in Preview Mode (Reading Mode). Change to source to edit the placeholder');
+				new Notice('You are in Reading Mode. Change to source to edit the placeholder');
 				return;
 			}
 			this.openIteractiveFill(target);
@@ -300,8 +298,6 @@ export default class PlaceholderPlugin extends Plugin {
 			const currentText = target.innerText;
 			const newText = currentText.replace(this.placeholderRegExp, replacementText);
 			target.innerText = newText;
-			console.log(target);
-			console.log(target.classList);
 			target.classList.remove('highlight-placeholder');
 		}
 		this.closeInteractiveFill();
@@ -325,7 +321,9 @@ export default class PlaceholderPlugin extends Plugin {
 				border: 0.5px solid var(--background-modifier-error);
 				padding-bottom: 2px;
 			}
-			
+			.highlight-placeholder:hover {
+				background-color: var(--background-modifier-active-hover);
+			}
 			.interactive-replace-modal {
 				background-color: var(--background-primary);
 				color: var(--text-normal);
@@ -353,7 +351,6 @@ export default class PlaceholderPlugin extends Plugin {
 			.interactive-replace-modal button:hover {
 				background-color: var(--interactive-accent-hover);
 			}
-			
 			.review-placeholders-table {
 				marging: 10px;
 			}
